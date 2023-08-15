@@ -24,6 +24,9 @@ import {
 import {toast} from '@/components/ui/use-toast';
 import {Textarea} from '@/components/ui/textarea';
 import {Separator} from '@/components/ui/separator';
+import {useEffect, useRef, useState} from 'react';
+import {bitable} from '@base-open/web-api';
+import {filterAttachedTables} from '@/lib/tables';
 
 const FormSchema = z.object({
         image: z
@@ -37,10 +40,49 @@ const FormSchema = z.object({
     })
 ;
 
+
 export function SelectForm() {
+    const [tableInfoNow, setTableInfoNow] = useState<any>({});
+    const [tableSchema, setTableSchema] = useState<any>('');
+    const [currentTable, setCurrentTable] = useState<any>({});
+    const [availableAttachments, setAvailableAttachments] = useState<any>([]);
+    const nowTableId = useRef<any>(null);
     const form = useForm<z.infer<typeof FormSchema>>({
         resolver: zodResolver(FormSchema),
     });
+
+    const updateTableInfo = async (tableId: any, totalTable: []) => {
+        const currentTableMeta = totalTable.find(({ id }: { id: any }) => id === tableId) as any;
+        const currentTable = await bitable.base.getTableById(currentTableMeta?.id);
+        setCurrentTable(currentTable);
+        const fields = await currentTable.getFieldMetaList();
+        const tableInfo = {
+            name: currentTableMeta?.name,
+            fields: fields,
+        };
+        console.log(tableInfo);
+        const allRecords = await currentTable.getRecordIdList();
+        const attachment =  filterAttachedTables(fields);
+        setAvailableAttachments(attachment);
+        const record = await currentTable.getCellValue(attachment[0].id,allRecords [0]);
+        console.log(record);
+        setTableInfoNow(tableInfo);
+    };
+
+    useEffect(() => {
+        let totalTable: any = [];
+        Promise.all([bitable.base.getTableMetaList(), bitable.base.getSelection()])
+            .then(async ([metaList, selection]) => {
+                totalTable = metaList;
+                nowTableId.current = selection?.tableId;
+                updateTableInfo(selection?.tableId, totalTable);
+            });
+
+        return () => {
+
+        };
+    }, []);
+
 
     function onSubmit(data: z.infer<typeof FormSchema>) {
         toast({
@@ -71,12 +113,13 @@ export function SelectForm() {
                                     </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                    <SelectItem
-                                        value="m@example.com">m@example.com</SelectItem>
-                                    <SelectItem
-                                        value="m@google.com">m@google.com</SelectItem>
-                                    <SelectItem
-                                        value="m@support.com">m@support.com</SelectItem>
+                                    { availableAttachments.map((attachment: any) => (
+                                        <SelectItem
+                                            key={ attachment.id }
+                                            value={ attachment.id }>
+                                            { attachment.name }
+                                        </SelectItem>
+                                    )) }
                                 </SelectContent>
                             </Select>
                             <FormMessage/>
@@ -112,19 +155,20 @@ export function SelectForm() {
 // eslint-disable-next-line react/display-name
 export default function () {
     return (
-    <div className=" space-y-2 p-6  md:block">
-        <div className="space-y-0.5">
-            <h2 className="text-2xl font-bold tracking-tight">WaterMark</h2>
-            <p className="text-muted-foreground">
-                🔖 add text watermark to your image attachment.
-            </p>
-        </div>
-        <Separator className="my-6" />
-        <div className="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
-            <div className="flex-1 pt-2">
-                <SelectForm />
+        <div className=" space-y-2 p-6  md:block">
+            <div className="space-y-0.5">
+                <h2 className="text-2xl font-bold tracking-tight">WaterMark</h2>
+                <p className="text-muted-foreground">
+                    🔖 add text watermark to your image attachment.
+                </p>
+            </div>
+            <Separator className="my-6"/>
+            <div
+                className="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
+                <div className="flex-1 pt-2">
+                    <SelectForm/>
+                </div>
             </div>
         </div>
-    </div>
     );
 }
