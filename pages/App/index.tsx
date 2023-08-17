@@ -3,7 +3,6 @@
 import {zodResolver} from '@hookform/resolvers/zod';
 import {useForm} from 'react-hook-form';
 import * as z from 'zod';
-
 import {Button} from '@/components/ui/button';
 import {
     Form,
@@ -26,7 +25,7 @@ import {Textarea} from '@/components/ui/textarea';
 import {Separator} from '@/components/ui/separator';
 import {useEffect, useRef, useState} from 'react';
 import {bitable} from '@base-open/web-api';
-import {filterAttachedTables} from '@/lib/tables';
+import {downloadImage, filterAttachedTables} from '@/lib/tables';
 
 const FormSchema = z.object({
         image: z
@@ -39,6 +38,7 @@ const FormSchema = z.object({
 
     })
 ;
+
 
 
 export function SelectForm() {
@@ -62,14 +62,23 @@ export function SelectForm() {
         };
         console.log(tableInfo);
         const allRecords = await currentTable.getRecordIdList();
-        const attachment =  filterAttachedTables(fields);
+        const attachment = filterAttachedTables(fields);
         setAvailableAttachments(attachment);
-        const record = await currentTable.getCellValue(attachment[0].id,allRecords [0]);
+        const record = await currentTable.getCellValue(attachment[0].id, allRecords [0]) as any;
         console.log(record);
+        const tableDownload = new downloadImage(record, currentTable);
+        // console.log(tableDownload.imageAttachments);
+        const url = await tableDownload.getDownloadUrl(tableDownload.imageAttachments[0]);
+        console.log(url);
+
         setTableInfoNow(tableInfo);
     };
-
+    const renderRef = useRef(true);
     useEffect(() => {
+        if (renderRef.current) {
+            renderRef.current = false;
+            return;
+        }
         let totalTable: any = [];
         Promise.all([bitable.base.getTableMetaList(), bitable.base.getSelection()])
             .then(async ([metaList, selection]) => {
@@ -78,9 +87,6 @@ export function SelectForm() {
                 updateTableInfo(selection?.tableId, totalTable);
             });
 
-        return () => {
-
-        };
     }, []);
 
 

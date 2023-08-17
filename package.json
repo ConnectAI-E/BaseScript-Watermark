@@ -6,7 +6,8 @@
     "dev": "next dev --port 3000 --hostname 0.0.0.0",
     "build": "next build",
     "start": "next start --port 3000 --hostname 0.0.0.0",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "vitest"
   },
   "dependencies": {
     "@base-open/web-api": "https://lf9-static.bytednsdoc.com/obj/eden-cn/jjjpceh7nulojvhj/@base-open-web-api-0.2.0-alpha.18.tgz",
@@ -21,6 +22,7 @@
     "@radix-ui/react-toast": "^1.1.4",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
+    "jimp": "^0.22.10",
     "next": "^13.4.9",
     "react": "^18.2.0",
     "react-dom": "18.2.0",
